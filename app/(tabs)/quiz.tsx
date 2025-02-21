@@ -1,64 +1,97 @@
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const questions = {
-  kolay: [
-    { question: "2 + 2 ?", answer: "4" },
-    { question: "5 - 3 ?", answer: "2" },
+const texts = {
+  leicht: [
+    "Heute ist das Wetter sehr schön.",
+    "Mein Name ist Ahmet.",
   ],
-  orta: [
-    { question: "12 / 4 ?", answer: "3" },
-    { question: "8 * 3 ?", answer: "24" },
+  mittel: [
+    "Ich trinke morgens gerne Kaffee.",
+    "Lesen erhöht das Wissen eines Menschen.",
   ],
-  zor: [
-    { question: "√49 ?", answer: "7" },
-    { question: "15 % 4 ?", answer: "3" },
+  schwer: [
+    "Die digitale Transformation führt zu großen Veränderungen in der Geschäftswelt.",
+    "Künstliche Intelligenz wird eine der wichtigsten Technologien der Zukunft sein.",
   ],
 };
 
-export default function QuizScreen() {
+export default function ListeningQuizScreen() {
   const router = useRouter();
-  const { level } = useLocalSearchParams();
-  const quiz = questions[level as keyof typeof questions];
+  const params = useLocalSearchParams();
+  const level = typeof params.level === "string" ? params.level.toLowerCase() : "leicht"; // Küçük harfe çevir
+
+  console.log("Seçilen Level:", level); // Debugging için konsola yazdır
+
+  const quiz = texts[level as keyof typeof texts] || texts["leicht"]; // Geçersiz değer olursa 'leicht' kullan
+
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [answer, setAnswer] = useState("");
+
+  useEffect(() => {
+    if (quiz.length > 0) {
+      readText();
+    }
+  }, [index]);
+
+  const readText = () => {
+    if (quiz[index]) {
+      Speech.speak(quiz[index], {
+        language: "de-DE",
+        rate: 0.9,
+      });
+    }
+  };
+
   const handleAnswer = async () => {
     let newScore = score;
-    
-    if (answer.trim() === quiz[index].answer) {
+
+    if (quiz[index] && answer.trim().toLowerCase() === quiz[index].toLowerCase()) {
       newScore = score + 1;
-      setScore(newScore); // Skoru güncelle
+      setScore(newScore);
     }
-  
+
     if (index < quiz.length - 1) {
       setIndex(index + 1);
       setAnswer("");
     } else {
-      // Skoru history'ye kaydet
       const result = { level, score: newScore, date: new Date().toISOString() };
       const history = JSON.parse((await AsyncStorage.getItem("quizHistory")) || "[]");
       await AsyncStorage.setItem("quizHistory", JSON.stringify([...history, result]));
-  
-      // **Skoru ve index'i sıfırla**
+
       setScore(0);
       setIndex(0);
       setAnswer("");
-  
-      // History ekranına yönlendir
+
       router.push("/history");
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Soru {index + 1}/{quiz.length}</Text>
-      <Text  style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>{quiz[index].question}</Text>
-      <TextInput style={styles.input} value={answer} onChangeText={setAnswer} placeholder="Cevabını yaz" />
-      <Button title="Cevapla" onPress={handleAnswer} />
-      <Text style={{ color: 'white'}}>Skor: {score}/{quiz.length}</Text>
+      <Text style={styles.title}>Hörverstehen {index + 1}/{quiz.length}</Text>
+
+      <TouchableOpacity style={styles.speakButton} onPress={readText}>
+        <Text style={styles.speakButtonText}>Text wiederholen</Text>
+      </TouchableOpacity>
+
+      <TextInput
+        style={styles.input}
+        value={answer}
+        onChangeText={setAnswer}
+        placeholder="Schreibe, was du gehört hast"
+        placeholderTextColor="#999"
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleAnswer}>
+        <Text style={styles.buttonText}>Antworten</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.score}>Punktzahl: {score}/{quiz.length}</Text>
     </View>
   );
 }
@@ -66,20 +99,55 @@ export default function QuizScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#1E1E1E",
     alignItems: "center",
     justifyContent: "center",
+    padding: 20,
   },
   title: {
-    color: "white",
+    color: "#FFD700",
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
   },
+  speakButton: {
+    backgroundColor: "#444",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  speakButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+  },
   input: {
-    color: "white",
-    borderWidth: 1,
-    padding: 10,
-    margin: 10,
-    width: "80%",
+    backgroundColor: "#444",
+    color: "#FFF",
+    borderRadius: 8,
+    padding: 12,
+    width: "90%",
+    marginTop: 15,
+    fontSize: 16,
+    textAlign: "center",
+  },
+  button: {
+    backgroundColor: "#FFA500",
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
+    marginTop: 15,
+    width: "90%",
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  score: {
+    color: "#FFF",
+    fontSize: 18,
+    marginTop: 15,
   },
 });
