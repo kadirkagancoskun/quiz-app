@@ -7,7 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
 import { API_KEY } from '@env';
-
+const apiKey = process.env.OPENAI_API_KEY;
 
 export default function ListeningQuizScreen() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export default function ListeningQuizScreen() {
         ],
       }, {
         headers: {
-          Authorization: `Bearer ${API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
       });
