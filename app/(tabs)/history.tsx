@@ -56,7 +56,7 @@ export default function HistoryScreen() {
           <View style={styles.card}>
            
             <Text style={styles.language}>{getFlagEmoji(item.language)}</Text>
-            <Text style={styles.level}>{item.level.toUpperCase()}</Text>
+            <Text style={styles.level}>{item.level}</Text>
             <Text style={styles.score}>Score: {item.score}</Text>
             <Text style={styles.date}>{new Date(item.date).toLocaleString()}</Text>
             <TouchableOpacity style={styles.deleteButton} onPress={() => deleteHistoryItem(index)}>
